@@ -20,11 +20,12 @@
     },
     "plugins": [
       [
-        "expo-av",
+        "expo-audio",
         {
           "microphonePermission": "Allow Little Buddy to record short answers for AI learning."
         }
-      ]
+      ],
+      "expo-asset"
     ]
   }
 }
