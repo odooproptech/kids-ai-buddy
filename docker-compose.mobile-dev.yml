@@ -1,0 +1,6 @@
+# DEV ONLY: publish FastAPI to a trusted LAN for testing on a physical phone.
+# Requires Docker Compose v2.24.4+ for !override.
+services:
+  api:
+    ports: !override
+      - "0.0.0.0:8000:8000"
