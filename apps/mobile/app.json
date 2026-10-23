@@ -1,0 +1,30 @@
+{
+  "expo": {
+    "name": "Little Buddy",
+    "slug": "kids-ai-buddy",
+    "scheme": "littlebuddy",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "ios": {
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSMicrophoneUsageDescription": "Little Buddy needs microphone access to hear your child's answers."
+      }
+    },
+    "android": {
+      "permissions": [
+        "RECORD_AUDIO"
+      ],
+      "package": "com.kidsaibuddy.littlebuddy"
+    },
+    "plugins": [
+      [
+        "expo-av",
+        {
+          "microphonePermission": "Allow Little Buddy to record short answers for AI learning."
+        }
+      ]
+    ]
+  }
+}
