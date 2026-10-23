@@ -4,3 +4,9 @@ __pycache__/
 .pytest_cache/
 .env
 *.webm
+*.swp
+*.swo
+*.mp3
+*.wav
+.env.*
+!.env.example
