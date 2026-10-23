@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { ActivityIndicator, Alert, KeyboardAvoidingView, Platform, ScrollView, StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
-import { Audio } from "expo-av";
-import * as FileSystem from "expo-file-system";
+import { AudioPlayer, createAudioPlayer, RecordingPresets, requestRecordingPermissionsAsync, setAudioModeAsync, useAudioRecorder } from "expo-audio";
+import * as FileSystem from "expo-file-system/legacy";
 import { AnswerResponse, ChatResponse, endSession, saveAudio, sendRecording, speakLesson, startSession } from "./src/api";
 
 type Mode = "chat" | "animals";
@@ -28,8 +28,9 @@ export default function App() {
   const [started, setStarted] = useState(false);
   const [finished, setFinished] = useState(false);
   const [lastAudio, setLastAudio] = useState<string | null>(null);
-  const audioRef = useRef<Audio.Sound | null>(null);
-  const recordRef = useRef<Audio.Recording | null>(null);
+  const audioRef = useRef<AudioPlayer | null>(null);
+  const recorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
+  const recordingRef = useRef(false);
   const recordingTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const cached = useRef<string[]>([]);
   const stepRef = useRef(0);
@@ -41,8 +42,7 @@ export default function App() {
     return () => {
       mounted.current = false;
       if (recordingTimer.current) clearTimeout(recordingTimer.current);
-      recordRef.current?.stopAndUnloadAsync().catch(() => {});
-      audioRef.current?.unloadAsync().catch(() => {});
+      audioRef.current?.remove();
       cached.current.forEach((uri) => FileSystem.deleteAsync(uri, { idempotent: true }).catch(() => {}));
     };
   }, []);
@@ -52,9 +52,9 @@ export default function App() {
   };
 
   async function stopSound() {
-    const sound = audioRef.current;
+    const player = audioRef.current;
     audioRef.current = null;
-    if (sound) await sound.unloadAsync().catch(() => {});
+    player?.remove();
     if (mounted.current) setState("idle");
   }
 
@@ -63,13 +63,14 @@ export default function App() {
     if (!tokenRef.current) return;
     setLastAudio(uri);
     setState("speaking");
-    const { sound } = await Audio.Sound.createAsync({ uri }, { shouldPlay: true });
-    audioRef.current = sound;
-    sound.setOnPlaybackStatusUpdate((status) => {
-      if (status.isLoaded && status.didJustFinish && mounted.current) {
+    const player = createAudioPlayer({ uri });
+    audioRef.current = player;
+    player.addListener("playbackStatusUpdate", (status) => {
+      if (status.didJustFinish && mounted.current) {
         void stopSound();
       }
     });
+    player.play();
   }
 
   async function unlock() {
@@ -89,8 +90,10 @@ export default function App() {
     const old = tokenRef.current;
     tokenRef.current = ""; setToken("");
     if (recordingTimer.current) clearTimeout(recordingTimer.current);
-    await recordRef.current?.stopAndUnloadAsync().catch(() => {});
-    recordRef.current = null;
+    if (recordingRef.current) {
+      recordingRef.current = false;
+      await recorder.stop().catch(() => {});
+    }
     await stopSound();
     setLastAudio(null); setTranscript("");
     setMessage("See you next time, superstar!");
@@ -165,13 +168,12 @@ export default function App() {
 
   async function stopRecording() {
     if (recordingTimer.current) clearTimeout(recordingTimer.current);
-    const recorder = recordRef.current;
-    recordRef.current = null;
-    if (!recorder) return;
+    if (!recordingRef.current) return;
+    recordingRef.current = false;
     try {
-      await recorder.stopAndUnloadAsync();
-      await Audio.setAudioModeAsync({ allowsRecordingIOS: false, playsInSilentModeIOS: true });
-      const uri = recorder.getURI();
+      await recorder.stop();
+      await setAudioModeAsync({ allowsRecording: false, playsInSilentMode: true });
+      const uri = recorder.uri;
       setState("idle");
       if (uri && tokenRef.current) await send(uri, mode, stepRef.current);
     } catch (e) { notify(e); setState("idle"); }
@@ -183,11 +185,12 @@ export default function App() {
     if (mode === "animals" && (!started || finished)) return;
     setError(""); setTranscript("");
     try {
-      const permission = await Audio.requestPermissionsAsync();
+      const permission = await requestRecordingPermissionsAsync();
       if (!permission.granted) throw new Error("Microphone permission is required to talk to Buddy.");
-      await Audio.setAudioModeAsync({ allowsRecordingIOS: true, playsInSilentModeIOS: true });
-      const { recording } = await Audio.Recording.createAsync(Audio.RecordingOptionsPresets.HIGH_QUALITY);
-      recordRef.current = recording;
+      await setAudioModeAsync({ allowsRecording: true, playsInSilentMode: true });
+      await recorder.prepareToRecordAsync();
+      recorder.record();
+      recordingRef.current = true;
       setState("listening");
       setMessage("I'm listening! Tap again to finish.");
       recordingTimer.current = setTimeout(() => { void stopRecording(); }, 12_000);
