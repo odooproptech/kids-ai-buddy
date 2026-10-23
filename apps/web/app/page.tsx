@@ -18,7 +18,7 @@ function decodeAudio(base64: string, mime: string): Blob {
   const binary = atob(base64);
   const bytes = new Uint8Array(binary.length);
   for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-  return new Blob([bytes], { type: mime });
+  return new Blob([bytes.buffer as ArrayBuffer], { type: mime });
 }
 
 export default function Home() {
@@ -246,6 +246,7 @@ export default function Home() {
       if (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === "undefined")
         throw new Error("Microphone unavailable. Use localhost or HTTPS and allow mic access.");
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      if (!tokenRef.current) { stream.getTracks().forEach((track) => track.stop()); return; }
       streamRef.current = stream;
       const preferred = ["audio/webm;codecs=opus", "audio/mp4", "audio/webm", "audio/ogg"]
         .find((kind) => MediaRecorder.isTypeSupported(kind));
