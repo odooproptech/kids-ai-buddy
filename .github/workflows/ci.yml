@@ -1,0 +1,35 @@
+name: Voice Buddy CI
+
+on:
+  pull_request:
+  push:
+    branches: [main, feat/voice-to-voice-v03]
+
+jobs:
+  api:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install API dependencies
+        run: pip install -r apps/api/requirements.txt
+      - name: Test FastAPI
+        working-directory: apps/api
+        run: python -m pytest -q
+  web:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install frontend dependencies
+        working-directory: apps/web
+        run: npm install
+      - name: Build Next.js
+        working-directory: apps/web
+        env:
+          API_INTERNAL_URL: http://api:8000
+        run: npm run build
