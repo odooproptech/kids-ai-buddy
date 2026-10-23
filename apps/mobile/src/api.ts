@@ -1,4 +1,4 @@
-import * as FileSystem from "expo-file-system/legacy";
+import * as FileSystem from "expo-file-system";
 import { encode } from "base-64";
 
 export type ChatResponse = { transcript: string; reply: string; audio_base64: string; audio_mime: string };
