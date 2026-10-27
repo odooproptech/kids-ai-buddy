@@ -14,7 +14,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
 from pydantic import BaseModel, Field
 
-app = FastAPI(title="Little Buddy API", version="0.3.0")
+app = FastAPI(title="Muknoon API", version="0.3.0")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],
@@ -37,7 +37,7 @@ MAX_TURNS = 20
 MAX_SESSIONS = 100
 MODEL = "gpt-4.1-mini"
 TUTOR_INSTRUCTIONS = (
-    "You are Little Buddy, a warm, cheerful English tutor for children aged 4 to 7. "
+    "You are Muknoon, a warm, cheerful English tutor for children aged 4 to 7. "
     "Speak only in clear, very simple English. Use at most 2 short sentences, "
     "maximum 35 words. Ask only one easy question at a time. "
     "Help the child learn shapes, colors, animals, counting, and letter sounds. "
@@ -236,7 +236,7 @@ async def voice_chat(
     now = time.monotonic()
     async with _state_lock:
         if state["busy"]:
-            raise HTTPException(409, "Buddy is finishing the previous response")
+            raise HTTPException(409, "Muknoon is finishing the previous response")
         if state["turns"] >= MAX_TURNS:
             raise HTTPException(429, "Session limit reached. Ask a parent to restart.")
         if now - state["last_turn"] < 2:
@@ -289,6 +289,6 @@ async def voice_chat(
     except HTTPException:
         raise
     except Exception:
-        raise HTTPException(502, "Buddy couldn't respond right now. Please try again.")
+        raise HTTPException(502, "Muknoon couldn't respond right now. Please try again.")
     finally:
         state["busy"] = False
