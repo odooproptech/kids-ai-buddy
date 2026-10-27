@@ -35,7 +35,8 @@ MAX_AUDIO_BYTES = 2_000_000
 SESSION_SECONDS = 15 * 60
 MAX_TURNS = 20
 MAX_SESSIONS = 100
-MODEL = "gpt-4.1-mini"
+MODEL = "qwen-plus"
+QWEN_BASE_URL = "https://dashscope-intl.aliyuncs.com/compatible-mode/v1"
 TUTOR_INSTRUCTIONS = (
     "You are Muknoon, a warm, cheerful English tutor for children aged 4 to 7. "
     "Speak only in clear, very simple English. Use at most 2 short sentences, "
@@ -87,11 +88,61 @@ def evaluate(transcript: str, animal: str) -> Answer:
     return Answer(transcript=transcript[:300], correct=correct, reply=reply, animal=animal)
 
 
+def get_qwen_client():
+    """Qwen via its OpenAI-compatible chat-completions endpoint."""
+    from openai import AsyncOpenAI
+    key = os.getenv("DASHSCOPE_API_KEY", "").strip()
+    if not key:
+        raise HTTPException(503, "Qwen LLM is not configured")
+    return AsyncOpenAI(api_key=key, base_url=os.getenv("QWEN_BASE_URL", QWEN_BASE_URL), timeout=35.0)
+
+
 def get_key() -> str:
     key = os.getenv("OPENAI_API_KEY", "").strip()
     if not key:
         raise HTTPException(503, "AI voice is not configured")
     return key
+
+
+async def synthesize_speech(text: str) -> bytes:
+    """Use ElevenLabs when configured, with OpenAI as a fallback."""
+    provider = os.getenv("TTS_PROVIDER", "elevenlabs").strip().lower()
+    if provider not in {"elevenlabs", "openai"}:
+        raise HTTPException(503, "Unsupported TTS provider")
+    if provider == "elevenlabs":
+        key = os.getenv("ELEVENLABS_API_KEY", "").strip()
+        voice_id = os.getenv("ELEVENLABS_VOICE_ID", "").strip()
+        if key and voice_id:
+            try:
+                import httpx
+                speed = max(0.7, min(1.2, float(os.getenv("ELEVENLABS_SPEED", "0.90"))))
+                async with httpx.AsyncClient(timeout=35.0) as client:
+                    response = await client.post(
+                        f"https://api.elevenlabs.io/v1/text-to-speech/{voice_id}",
+                        headers={"xi-api-key": key, "Accept": "audio/mpeg"},
+                        json={"text": text, "model_id": os.getenv("ELEVENLABS_MODEL", "eleven_flash_v2_5"),
+                              "output_format": "mp3_44100_128",
+                              "voice_settings": {"speed": speed, "stability": 0.5, "similarity_boost": 0.75}},
+                    )
+                    response.raise_for_status()
+                    if response.content:
+                        return response.content
+            except Exception:
+                pass  # Attempt the configured OpenAI fallback.
+    key = os.getenv("OPENAI_API_KEY", "").strip()
+    if not key:
+        raise HTTPException(503, "No working speech provider configured")
+    try:
+        from openai import AsyncOpenAI
+        client = AsyncOpenAI(api_key=key, timeout=30.0)
+        result = await client.audio.speech.create(
+            model="gpt-4o-mini-tts", voice="coral", input=text,
+            instructions="Speak clearly, warmly and slowly in English for a young learner.",
+            response_format="mp3",
+        )
+        return result.content
+    except Exception:
+        raise HTTPException(502, "Voice playback unavailable")
 
 
 def require_session(token: str) -> dict:
@@ -120,7 +171,7 @@ def safe_reply(text: str) -> str:
 
 @app.get("/health")
 def health():
-    return {"status": "ok", "mode": "ai-enabled" if os.getenv("OPENAI_API_KEY") else "local-demo"}
+    return {"status": "ok", "mode": "ai-enabled" if os.getenv("OPENAI_API_KEY") and os.getenv("DASHSCOPE_API_KEY") else "local-demo"}
 
 
 @app.get("/api/lessons")
@@ -210,19 +261,9 @@ async def voice_speak(body: SpeechRequest):
     require_session(body.session_token)
     if body.text not in LESSON_PHRASES:
         raise HTTPException(400, "Unapproved lesson phrase")
-    key = get_key()
-    try:
-        from openai import AsyncOpenAI
-        client = AsyncOpenAI(api_key=key, timeout=30.0)
-        result = await client.audio.speech.create(
-            model="gpt-4o-mini-tts", voice="coral", input=body.text,
-            instructions="Speak slowly, warmly and clearly for a young English learner.",
-            response_format="mp3",
-        )
-        return Response(content=result.content, media_type="audio/mpeg",
-                        headers={"Cache-Control": "no-store"})
-    except Exception:
-        raise HTTPException(502, "Voice playback unavailable")
+    audio_bytes = await synthesize_speech(body.text)
+    return Response(content=audio_bytes, media_type="audio/mpeg",
+                    headers={"Cache-Control": "no-store"})
 
 
 @app.post("/api/voice/chat")
@@ -257,23 +298,17 @@ async def voice_chat(
         if not transcript:
             return {"transcript": "", "reply": "I couldn't hear you. Can you try again?",
                     "audio_base64": "", "audio_mime": "audio/mpeg"}
-        response = await client.responses.create(
-            model=os.getenv("CHAT_MODEL", MODEL),
-            instructions=TUTOR_INSTRUCTIONS,
-            input=context + [{"role": "user", "content": transcript}],
-            max_output_tokens=120,
-            store=False,
+        qwen = get_qwen_client()
+        response = await qwen.chat.completions.create(
+            model=os.getenv("QWEN_MODEL", MODEL),
+            messages=[{"role": "system", "content": TUTOR_INSTRUCTIONS}] + context + [{"role": "user", "content": transcript}],
+            max_tokens=120,
+            temperature=0.5,
         )
-        reply = safe_reply(response.output_text or "")
+        reply = safe_reply(response.choices[0].message.content or "")
         if not reply:
             reply = "Let's learn! Can you name a color?"
-        speech = await client.audio.speech.create(
-            model="gpt-4o-mini-tts",
-            voice="coral",
-            input=reply,
-            instructions="Speak very clearly, gently and slowly in English for a child aged four to seven. Pause naturally.",
-            response_format="mp3",
-        )
+        speech_bytes = await synthesize_speech(reply)
         if require_session(session_token) is not state:
             raise HTTPException(401, "Voice session expired")
         state["history"] = (context + [
@@ -283,7 +318,7 @@ async def voice_chat(
         return {
             "transcript": transcript,
             "reply": reply,
-            "audio_base64": base64.b64encode(speech.content).decode("ascii"),
+            "audio_base64": base64.b64encode(speech_bytes).decode("ascii"),
             "audio_mime": "audio/mpeg",
         }
     except HTTPException:
