@@ -72,3 +72,8 @@ Run the frontend build with \`cd apps/web && npm install && npm run build\`.
 - The parent PIN is a **basic demo gate**, not identity verification. Rate-limiting is in-memory and unsuitable for internet deployment.
 - This is **turn-based** voice-to-voice, not streaming real-time conversation.
 - The model is instructed to stay educational, but no AI safety prompt guarantees perfect responses. Adult supervision is essential.
+
+
+## Qwen LLM provider
+
+Muknoon uses **Qwen** for the tutor's text responses via the DashScope OpenAI-compatible Chat Completions API. Set `DASHSCOPE_API_KEY` in `.env` and optionally `QWEN_MODEL` (default `qwen-plus`) and `QWEN_BASE_URL` (default international endpoint). **Do not expose keys to the browser or commit them.** The current voice pipeline still uses `OPENAI_API_KEY` for speech recognition and speech synthesis; Qwen replaces only the LLM. The parent's PIN and existing voice session limits remain in place. The two API providers may process children's audio/transcripts; obtain parental consent and review data handling before use.
