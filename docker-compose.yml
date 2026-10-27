@@ -12,7 +12,9 @@ services:
     environment:
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
       STT_MODEL: ${STT_MODEL:-gpt-4o-mini-transcribe}
-      CHAT_MODEL: ${CHAT_MODEL:-gpt-4.1-mini}
+      DASHSCOPE_API_KEY: ${DASHSCOPE_API_KEY:-}
+      QWEN_MODEL: ${QWEN_MODEL:-qwen-plus}
+      QWEN_BASE_URL: ${QWEN_BASE_URL:-https://dashscope-intl.aliyuncs.com/compatible-mode/v1}
       PARENT_PIN: ${PARENT_PIN:-}
     ports:
       - "127.0.0.1:8000:8000"

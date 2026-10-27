@@ -35,7 +35,8 @@ MAX_AUDIO_BYTES = 2_000_000
 SESSION_SECONDS = 15 * 60
 MAX_TURNS = 20
 MAX_SESSIONS = 100
-MODEL = "gpt-4.1-mini"
+MODEL = "qwen-plus"
+QWEN_BASE_URL = "https://dashscope-intl.aliyuncs.com/compatible-mode/v1"
 TUTOR_INSTRUCTIONS = (
     "You are Muknoon, a warm, cheerful English tutor for children aged 4 to 7. "
     "Speak only in clear, very simple English. Use at most 2 short sentences, "
@@ -87,6 +88,15 @@ def evaluate(transcript: str, animal: str) -> Answer:
     return Answer(transcript=transcript[:300], correct=correct, reply=reply, animal=animal)
 
 
+def get_qwen_client():
+    """Qwen via its OpenAI-compatible chat-completions endpoint."""
+    from openai import AsyncOpenAI
+    key = os.getenv("DASHSCOPE_API_KEY", "").strip()
+    if not key:
+        raise HTTPException(503, "Qwen LLM is not configured")
+    return AsyncOpenAI(api_key=key, base_url=os.getenv("QWEN_BASE_URL", QWEN_BASE_URL), timeout=35.0)
+
+
 def get_key() -> str:
     key = os.getenv("OPENAI_API_KEY", "").strip()
     if not key:
@@ -120,7 +130,7 @@ def safe_reply(text: str) -> str:
 
 @app.get("/health")
 def health():
-    return {"status": "ok", "mode": "ai-enabled" if os.getenv("OPENAI_API_KEY") else "local-demo"}
+    return {"status": "ok", "mode": "ai-enabled" if os.getenv("OPENAI_API_KEY") and os.getenv("DASHSCOPE_API_KEY") else "local-demo"}
 
 
 @app.get("/api/lessons")
@@ -257,14 +267,14 @@ async def voice_chat(
         if not transcript:
             return {"transcript": "", "reply": "I couldn't hear you. Can you try again?",
                     "audio_base64": "", "audio_mime": "audio/mpeg"}
-        response = await client.responses.create(
-            model=os.getenv("CHAT_MODEL", MODEL),
-            instructions=TUTOR_INSTRUCTIONS,
-            input=context + [{"role": "user", "content": transcript}],
-            max_output_tokens=120,
-            store=False,
+        qwen = get_qwen_client()
+        response = await qwen.chat.completions.create(
+            model=os.getenv("QWEN_MODEL", MODEL),
+            messages=[{"role": "system", "content": TUTOR_INSTRUCTIONS}] + context + [{"role": "user", "content": transcript}],
+            max_tokens=120,
+            temperature=0.5,
         )
-        reply = safe_reply(response.output_text or "")
+        reply = safe_reply(response.choices[0].message.content or "")
         if not reply:
             reply = "Let's learn! Can you name a color?"
         speech = await client.audio.speech.create(
