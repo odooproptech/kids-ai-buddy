@@ -24,7 +24,7 @@ function decodeAudio(base64: string, mime: string): Blob {
 export default function Home() {
   const [mode, setMode] = useState<Mode>("chat");
   const [mood, setMood] = useState<Mood>("idle");
-  const [message, setMessage] = useState("Hi, friend! Ask a parent to start talking with Buddy.");
+  const [message, setMessage] = useState("Hi, friend! Ask a parent to start talking with Muknoon.");
   const [parentPin, setParentPin] = useState("");
   const [unlocked, setUnlocked] = useState(false);
   const [sessionBusy, setSessionBusy] = useState(false);
@@ -193,7 +193,7 @@ export default function Home() {
   async function submitVoice(blob: Blob, mime: string, targetMode: Mode) {
     if (!tokenRef.current || busyRef.current) return;
     busyRef.current = true; setAiBusy(true); setMood("thinking");
-    setMicError(""); setMessage("Buddy is thinking...");
+    setMicError(""); setMessage("Muknoon is thinking...");
     const ctrl = new AbortController();
     requestRef.current = ctrl;
     try {
@@ -205,7 +205,7 @@ export default function Home() {
         method: "POST", body: form, signal: ctrl.signal,
       });
       const result = await response.json();
-      if (!response.ok) throw new Error(result.detail || "Buddy could not hear you.");
+      if (!response.ok) throw new Error(result.detail || "Muknoon could not hear you.");
       if (ctrl.signal.aborted || !tokenRef.current) return;
       setChildSaid(result.transcript);
       if (targetMode === "chat") {
@@ -223,7 +223,7 @@ export default function Home() {
       }
     } catch (err) {
       if (!ctrl.signal.aborted) {
-        setMicError(err instanceof Error ? err.message : "Buddy could not respond.");
+        setMicError(err instanceof Error ? err.message : "Muknoon could not respond.");
         setMood("retry");
         setMessage("Let's try again!");
       }
@@ -299,7 +299,7 @@ export default function Home() {
   return (
     <main>
       <header>
-        <div className="brand">✦ Little Buddy <span>Family learning</span></div>
+        <div className="brand">✦ Muknoon <span>Family learning</span></div>
         <div className="private">🔒 Parent-supervised demo</div>
       </header>
       <div className="app">
@@ -308,7 +308,7 @@ export default function Home() {
           <h1>Every little word<br/><em>is a big adventure!</em></h1>
           <p className="intro">Talk, listen and play with your friendly English learning buddy.</p>
           <div className="mascotWrap">
-            <div className={"robot " + mood} aria-label={"Buddy is " + mood} role="img">
+            <div className={"robot " + mood} aria-label={"Muknoon is " + mood} role="img">
               <div className="antenna"><i/></div><div className="head"><div className="face"><div className="eyes"><b/><b/></div><div className="mouth"/></div><div className="cheek left"/><div className="cheek right"/></div>
               <div className="bodyRobot"><div className="heart">♥</div></div>
               <div className="arm armL"/><div className="arm armR"/><div className="feet"><i/><i/></div>
@@ -324,11 +324,11 @@ export default function Home() {
             </button>
             <button onClick={stopAudio} disabled={mood !== "speaking"}>■ Stop talking</button>
           </div>
-          <p className="aiDisclosure">Buddy uses an AI-generated voice, not a real person.</p>
+          <p className="aiDisclosure">Muknoon uses an AI-generated voice, not a real person.</p>
         </section>
         <section className="play">
           <div className="modeSwitch" aria-label="Learning mode">
-            <button className={mode === "chat" ? "selected" : ""} onClick={() => switchMode("chat")}>🎤 Talk to Buddy</button>
+            <button className={mode === "chat" ? "selected" : ""} onClick={() => switchMode("chat")}>🎤 Talk to Muknoon</button>
             <button className={mode === "game" ? "selected" : ""} onClick={() => switchMode("game")}>🐾 Animal game</button>
           </div>
           {!unlocked ? (
@@ -352,13 +352,13 @@ export default function Home() {
             <div className="chatPanel">
               <div className="animalHero">🎨 🐻 ⭐</div>
               <h2>Let&apos;s talk!</h2>
-              <p>Say: “Hello Buddy! Teach me shapes!”</p>
+              <p>Say: “Hello Muknoon! Teach me shapes!”</p>
               <div className="micArea">
                 <button className={"mic " + (recording ? "active" : "")}
                   onClick={() => void toggleRecording()} disabled={!unlocked || aiBusy || mood === "speaking" || mood === "thinking"}
                   aria-label={recording ? "Stop recording" : "Start speaking"}>{recording ? "■" : "🎤"}</button>
-                <div><strong>{recording ? "Tap to finish" : aiBusy ? "Buddy is thinking..." : "Tap and speak"}</strong>
-                  <small>{recording ? "Stops automatically after 12 seconds" : "Buddy answers in clear English"}</small></div>
+                <div><strong>{recording ? "Tap to finish" : aiBusy ? "Muknoon is thinking..." : "Tap and speak"}</strong>
+                  <small>{recording ? "Stops automatically after 12 seconds" : "Muknoon answers in clear English"}</small></div>
               </div>
             </div>
           ) : (

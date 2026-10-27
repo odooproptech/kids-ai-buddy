@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "Little Buddy",
+    "name": "Muknoon",
     "slug": "kids-ai-buddy",
     "scheme": "littlebuddy",
     "version": "0.1.0",
@@ -9,7 +9,7 @@
     "ios": {
       "supportsTablet": true,
       "infoPlist": {
-        "NSMicrophoneUsageDescription": "Little Buddy needs microphone access to hear your child's answers."
+        "NSMicrophoneUsageDescription": "Muknoon needs microphone access to hear your child's answers."
       }
     },
     "android": {
@@ -22,7 +22,7 @@
       [
         "expo-audio",
         {
-          "microphonePermission": "Allow Little Buddy to record short answers for AI learning."
+          "microphonePermission": "Allow Muknoon to record short answers for AI learning."
         }
       ],
       "expo-asset"

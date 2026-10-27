@@ -1,12 +1,12 @@
-# Kids AI Buddy (Little Buddy) — v0.3 Voice-to-Voice
+# Muknoon Kids AI — v0.3 Voice-to-Voice
 
-A parent-supervised local educational demo for children aged 4–7. Next.js 15 frontend + FastAPI backend. Includes the existing farm animal picture game and a new **Talk to Buddy** push-to-talk conversation.
+A parent-supervised local educational demo for children aged 4–7. Next.js 15 frontend + FastAPI backend. Includes the existing farm animal picture game and a new **Talk to Muknoon** push-to-talk conversation.
 
 ## What works
 
 - Tap the microphone, talk for up to 12 seconds, and tap again to send.
 - OpenAI speech-to-text → short, age-appropriate AI reply → generated English MP3 speech.
-- Buddy's robot mouth animates while the generated audio plays.
+- Muknoon's robot mouth animates while the generated audio plays.
 - A parent enters a configurable PIN to start a 15-minute session (up to 20 turns).
 - Chat memory is short-lived in RAM only; there is **no database** and no audio file storage.
 - Animal picture game works without AI. Voice recognition and natural speech require an active parent-authorized session.
@@ -39,7 +39,7 @@ docker compose ps
 curl http://localhost:8000/health
 ~~~
 
-Open **http://localhost:3000** on the same computer. Enter the parent PIN, click **Start voice time**, then choose **Talk to Buddy**. Grant your browser microphone permission. Ask “Hello Buddy! Teach me shapes!”
+Open **http://localhost:3000** on the same computer. Enter the parent PIN, click **Start voice time**, then choose **Talk to Muknoon**. Grant your browser microphone permission. Ask “Hello Muknoon! Teach me shapes!”
 
 The Next.js \`/api/*\` rewrite targets \`http://api:8000/api/*\` within Docker Compose. If running Next.js outside Docker, set \`API_INTERNAL_URL=http://127.0.0.1:8000\` during its build.
 

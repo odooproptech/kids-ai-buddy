@@ -137,7 +137,7 @@ export default function App() {
   async function send(uri: string, currentMode: Mode, currentStep: number) {
     if (!tokenRef.current || busyRef.current) return;
     busyRef.current = true; setBusy(true); setState("thinking"); setError("");
-    setMessage("Buddy is thinking...");
+    setMessage("Muknoon is thinking...");
     try {
       const result = await sendRecording(uri, tokenRef.current, currentMode === "animals" ? animals[currentStep].name : undefined);
       if (!tokenRef.current || !mounted.current) return;
@@ -186,7 +186,7 @@ export default function App() {
     setError(""); setTranscript("");
     try {
       const permission = await requestRecordingPermissionsAsync();
-      if (!permission.granted) throw new Error("Microphone permission is required to talk to Buddy.");
+      if (!permission.granted) throw new Error("Microphone permission is required to talk to Muknoon.");
       await setAudioModeAsync({ allowsRecording: true, playsInSilentMode: true });
       await recorder.prepareToRecordAsync();
       recorder.record();
@@ -201,13 +201,13 @@ export default function App() {
     <View style={styles.root}>
       <StatusBar barStyle="dark-content" />
       <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
-        <View style={styles.header}><Text style={styles.brand}>✦ Little Buddy</Text><Text style={styles.tag}>🔒 Family learning</Text></View>
+        <View style={styles.header}><Text style={styles.brand}>✦ Muknoon</Text><Text style={styles.tag}>🔒 Family learning</Text></View>
         <View style={styles.hero}>
           <Text style={styles.eyebrow}>🌈 LET'S LEARN TOGETHER</Text>
           <Text style={styles.heading}>Every little word{"\n"}<Text style={styles.purple}>is a big adventure!</Text></Text>
           <View style={styles.robotBox}>
             <Text style={[styles.robot, state === "speaking" && styles.talking]}>{state === "listening" ? "🤖🎤" : state === "thinking" ? "🤖💭" : "🤖"}</Text>
-            <Text style={styles.robotState}>{state === "speaking" ? "● Buddy is speaking" : state === "listening" ? "● Buddy is listening" : state === "thinking" ? "● Thinking..." : "Your English buddy"}</Text>
+            <Text style={styles.robotState}>{state === "speaking" ? "● Muknoon is speaking" : state === "listening" ? "● Muknoon is listening" : state === "thinking" ? "● Thinking..." : "Your English buddy"}</Text>
           </View>
           <View style={styles.bubble}><Text style={styles.bubbleText}>{message}</Text></View>
           {transcript ? <Text style={styles.transcript}>You said: {transcript}</Text> : null}
@@ -218,7 +218,7 @@ export default function App() {
         </View>
         <View style={styles.card}>
           <View style={styles.tabs}>
-            <TouchableOpacity style={[styles.tab, mode === "chat" && styles.tabSelected]} onPress={() => { if (state === "idle") { setMode("chat"); setMessage("Tell me about a color, shape, or animal!"); } }}><Text style={styles.tabText}>🎤 Talk to Buddy</Text></TouchableOpacity>
+            <TouchableOpacity style={[styles.tab, mode === "chat" && styles.tabSelected]} onPress={() => { if (state === "idle") { setMode("chat"); setMessage("Tell me about a color, shape, or animal!"); } }}><Text style={styles.tabText}>🎤 Talk to Muknoon</Text></TouchableOpacity>
             <TouchableOpacity style={[styles.tab, mode === "animals" && styles.tabSelected]} onPress={() => { if (state === "idle") { setMode("animals"); setMessage("Let's play the animal game!"); } }}><Text style={styles.tabText}>🐾 Animal game</Text></TouchableOpacity>
           </View>
           {!token ? (
@@ -238,7 +238,7 @@ export default function App() {
             <View style={styles.content}>
               <Text style={styles.emojis}>🎨 🐻 ⭐</Text>
               <Text style={styles.title}>Let's talk!</Text>
-              <Text style={styles.description}>Say: "Hello Buddy! Teach me shapes!"</Text>
+              <Text style={styles.description}>Say: "Hello Muknoon! Teach me shapes!"</Text>
             </View>
           ) : (
             <View style={styles.content}>
@@ -255,7 +255,7 @@ export default function App() {
             <TouchableOpacity style={[styles.mic, state === "listening" && styles.micActive, (!token || busy || state === "speaking" || state === "thinking") && styles.micDisabled]} disabled={!token || busy || state === "speaking" || state === "thinking"} onPress={() => void toggleMic()}>
               <Text style={styles.micIcon}>{state === "listening" ? "■" : "🎤"}</Text>
             </TouchableOpacity>
-            <View style={{ flex: 1 }}><Text style={styles.micTitle}>{state === "listening" ? "Tap to finish" : state === "thinking" ? "Buddy is thinking..." : "Tap and speak"}</Text><Text style={styles.micHint}>Short English answers, up to 12 seconds</Text></View>
+            <View style={{ flex: 1 }}><Text style={styles.micTitle}>{state === "listening" ? "Tap to finish" : state === "thinking" ? "Muknoon is thinking..." : "Tap and speak"}</Text><Text style={styles.micHint}>Short English answers, up to 12 seconds</Text></View>
           </View>
           {error ? <Text style={styles.error}>{error}</Text> : null}
           <Text style={styles.disclaimer}>AI-generated voice. Audio is sent to OpenAI for processing with parent permission. Supervise children. Do not share personal details.</Text>
