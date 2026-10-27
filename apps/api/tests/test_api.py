@@ -11,6 +11,7 @@ client = TestClient(app)
 def start_voice(monkeypatch):
     monkeypatch.setenv("PARENT_PIN", "842963")
     monkeypatch.setenv("OPENAI_API_KEY", "unit-test-only")
+    monkeypatch.setenv("DASHSCOPE_API_KEY", "qwen-test-only")
     result = client.post("/api/voice/session", json={"pin": "842963"})
     assert result.status_code == 200
     return result.json()["session_token"]
@@ -79,11 +80,11 @@ def test_chat_transcribes_and_speaks(monkeypatch):
             assert kwargs["model"] == "gpt-4o-mini-transcribe"
             return SimpleNamespace(text="What is a circle?")
 
-    class FakeResponses:
+    class FakeCompletions:
         async def create(self, **kwargs):
-            assert kwargs["store"] is False
-            assert "personal information" in kwargs["instructions"]
-            return SimpleNamespace(output_text="A circle is round! Can you draw one?")
+            assert kwargs["model"] == "qwen-plus"
+            assert "personal information" in kwargs["messages"][0]["content"]
+            return SimpleNamespace(choices=[SimpleNamespace(message=SimpleNamespace(content="A circle is round! Can you draw one?"))])
 
     class FakeSpeech:
         async def create(self, **kwargs):
@@ -92,11 +93,12 @@ def test_chat_transcribes_and_speaks(monkeypatch):
 
     class FakeOpenAI:
         def __init__(self, **kwargs):
-            assert kwargs["api_key"] == "unit-test-only"
+            assert kwargs["api_key"] in ("unit-test-only", "qwen-test-only")
+            self.chat = SimpleNamespace(completions=FakeCompletions())
             self.audio = SimpleNamespace(
                 transcriptions=FakeTranscription(), speech=FakeSpeech(),
             )
-            self.responses = FakeResponses()
+
 
     monkeypatch.setitem(sys.modules, "openai", SimpleNamespace(AsyncOpenAI=FakeOpenAI))
     result = client.post(
